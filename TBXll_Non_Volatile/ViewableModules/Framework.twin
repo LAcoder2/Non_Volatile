@@ -1,0 +1,724 @@
+Module Framework
+    #Region "XLCALL.CPP"
+    /*
+    **  Microsoft Excel Developer's Toolkit
+    **  Version 14.0
+    **
+    **  File:           SRC\XLCALL.CPP
+    **  Description:    Code file for Excel callbacks
+    **  Platform:       Microsoft Windows
+    **
+    **  This file defines the entry points 
+    **  which are used in the Microsoft Excel C API.
+    **
+    */
+
+    ' #ifndef _WINDOWS_
+    ' #include <windows.h>
+    ' #endif    
+
+    ' #include "xlcall.h"
+
+    /*
+    ** Excel 12 entry points backwards compatible with Excel 11
+    **
+    ** Excel12 and Excel12v ensure backwards compatibility with Excel 11
+    ** and earlier versions. These functions will return xlretFailed when
+    ** used to callback into Excel 11 and earlier versions
+    */
+
+    Public Const cxloper12Max = 255
+    Public Const EXCEL12ENTRYPT = "MdCallBack12"'/////////////################\\\\\\\\\\\\\\
+
+    ' typedef int (PASCAL *EXCEL12PROC) (int xlfn, int coper, LPXLOPER12 *rgpxloper12, LPXLOPER12 xloper12Res);
+    [UseGetLastError(False), DLLStackCheck(False)]
+    DeclareWide PtrSafe Function MdCallBack12 Lib "Excel.exe" ( _
+                       ByVal xlfn As ExcelCommandNumbers, _
+              Optional ByVal coper As Long, _
+                    Optional rgpXloper12 As LongPtr, _
+                    Optional Xloper12Res As Any = vbNullPtr) As Excel4ReturnCodes
+    [DLLStackCheck(False)]
+    Public Delegate Function EXCEL12PROC ( _
+                        ByVal xlfn As ExcelCommandNumbers, _
+               Optional ByVal coper As Long, _
+                     Optional rgpXloper12 As LongPtr, _
+                     Optional Xloper12Res As Any = vbNullPtr) As Excel4ReturnCodes
+    ' HMODULE hmodule;
+    ' EXCEL12PROC pexcel12;
+    Private hmodule As LongPtr
+    Public pExcel12 As EXCEL12PROC
+    
+    ' __forceinline void FetchExcel12EntryPt(void)
+    ' {
+        ' if (pexcel12 == NULL)
+        ' {
+            ' hmodule = GetModuleHandle(NULL);
+            ' if (hmodule != NULL)
+            ' {
+                ' pexcel12 = (EXCEL12PROC) GetProcAddress(hmodule, EXCEL12ENTRYPT);
+            ' }
+        ' }
+    ' }
+    Sub FetchExcel12EntryPt()
+        If pExcel12 = 0 Then
+            hmodule = GetModuleHandleW(0)
+            If hmodule Then
+                pExcel12 = CType(Of EXCEL12PROC)(GetProcAddress(hmodule, EXCEL12ENTRYPT))
+                pExcel12p = AddressOf Excel12p
+                pExcel12v = CType(Of Excel12v_Deleg)(AddressOf Excel12v)
+            End If
+        End If
+    End Sub
+    ' /*
+    ' ** This function explicitly sets EXCEL12ENTRYPT.
+    ' **
+    ' ** If the XLL is loaded not by Excel.exe, but by a HPC cluster container DLL,
+    ' ** then GetModuleHandle(NULL) would return the process EXE module handle.
+    ' ** In that case GetProcAddress would fail, since the process EXE doesn't
+    ' ** export EXCEL12ENTRYPT ( since it's not Excel.exe).
+    ' **
+    ' ** First try to fetch the known good entry point,
+    ' ** then set the passed in address.
+    ' */
+    ' #ifdef __cplusplus
+    ' extern "C"
+    ' #endif    
+    ' __declspec(dllexport)
+    ' void pascal SetExcel12EntryPt(EXCEL12PROC pexcel12New)
+    ' {
+        ' FetchExcel12EntryPt();
+        ' if (pexcel12 == NULL)
+        ' {
+            ' pexcel12 = pexcel12New;
+        ' }
+    ' }
+    [DllExport]
+    Sub SetExcel12EntryPt(ByVal pexcel12New As EXCEL12PROC)
+        FetchExcel12EntryPt ()
+        If (pExcel12 = 0) Then
+            pExcel12 = pexcel12New
+        End If
+    End Sub
+    ' int _cdecl Excel12(int xlfn, LPXLOPER12 operRes, int count, ...)
+    ' {
+
+        ' LPXLOPER12 rgxloper12[cxloper12Max];
+        ' va_list ap;
+        ' int ioper;
+        ' int mdRet;
+
+        ' FetchExcel12EntryPt();
+        ' if (pexcel12 == NULL)
+        ' {
+            ' mdRet = xlretFailed;
+        ' }
+        ' else
+        ' {
+            ' mdRet = xlretInvCount;
+            ' if ((count >= 0)  && (count <= cxloper12Max))
+            ' {
+                ' va_start(ap, count);
+                ' for (ioper = 0; ioper < count ; ioper++)
+                ' {
+                    ' rgxloper12[ioper] = va_arg(ap, LPXLOPER12);
+                ' }
+                ' va_end(ap);
+                ' mdRet = (pexcel12)(xlfn, count, &rgxloper12[0], operRes);
+            ' }
+        ' }
+        ' return(mdRet);
+    
+    ' }
+    [Unimplemented]
+    [Description("TEMPORARY - tB cannot currently put UDTs in Variants so no ParamArray.\" & vbCrLf & "Use Excel12v instead.")]
+    Function Excel12(ByVal xlfn As ExcelCommandNumbers, operRes As XLOPER12, ByVal count As Long, ParamArray opers() As Variant) As Excel4ReturnCodes
+        ' Dim rgxloper12() As XLOPER12
+        Dim mdRet As Excel4ReturnCodes
+        ' FetchExcel12EntryPt()
+        ' If (pexcel12 = 0) Then
+            mdRet = xlretFailed
+        ' Else
+        '     mdRet = xlretInvCount
+        '     If ((count >= 0) And (count <= cxloper12Max)) Then
+        '         ReDim rgxloper12(count - 1)
+        '         Dim ioper As Long
+        '         For ioper = 0 To UBound(opers)
+        '             rgxloper12(ioper) = opers(ioper)
+        '             mdRet = (pexcel12)(xlfn, count, VarPtr(rgxloper12(0)), operRes)
+        '         Next
+        '     End If
+        ' End If
+        Return mdRet
+    End Function
+    
+    ' int pascal Excel12v(int xlfn, LPXLOPER12 operRes, int count, LPXLOPER12 opers[])
+    ' {
+
+        ' int mdRet;
+
+        ' FetchExcel12EntryPt();
+        ' if (pexcel12 == NULL)
+        ' {
+            ' mdRet = xlretFailed;
+        ' }
+        ' else
+        ' {
+            ' mdRet = (pexcel12)(xlfn, count, &opers[0], operRes);
+        ' }
+        ' return(mdRet);
+
+    ' }
+    ' Private Delegate
+    Private Sub Example_pExcel12p()
+        Dim lRet As Excel4ReturnCodes
+        pExcel12p = AddressOf Excel12p
+        lRet = pExcel12p(xlcAlert, , 2, GetXLString12("Hello World!"), GetXLInt12(1&))
+    End Sub
+    Public Delegate Function Excel12p_Deleg (ByVal xlfn As ExcelCommandNumbers, _
+                               Optional OpRes As Any = vbNullPtr, Optional ByVal count As Long, _
+                               Optional pOp1 As Any = vbNullPtr, Optional pOp2 As Any = vbNullPtr, _
+                               Optional pOp3 As Any = vbNullPtr, Optional pOp4 As Any = vbNullPtr, _
+                               Optional pOp5 As Any = vbNullPtr) As Excel4ReturnCodes
+    Public pExcel12p As Excel12p_Deleg
+    [DllExport]
+    Function Excel12p(ByVal xlfn As ExcelCommandNumbers, _
+                              Optional ByVal pOpRes As LongPtr, Optional ByVal count As Long, _
+                              Optional ByVal pOp1 As LongPtr, Optional ByVal pOp2 As LongPtr, _
+                              Optional ByVal pOp3 As LongPtr, Optional ByVal pOp4 As LongPtr, _
+                              Optional ByVal pOp5 As LongPtr) As Excel4ReturnCodes
+    '    If count = 0 Then
+    '        Excel12p = MdCallBack12(xlfn, count, ByVal vbNullPtr, ByVal pOpRes)  'pExcel12(xlfn, count, ByVal 0, operRes)
+    '    Else
+            Excel12p = pExcel12(xlfn, count, pOp1, ByVal pOpRes)            'ByVal VarPtr(pOp1)
+    '    End If
+    End Function
+    
+    Public Delegate Function Excel12v_Deleg ( _
+            ByVal xlfn As ExcelCommandNumbers, operRes As Any, _
+            ByVal count As Long, opers() As Any) As Excel4ReturnCodes
+    Public pExcel12v As Excel12v_Deleg '= AddressOf Excel12v          
+    [DllExport]
+    Function Excel12v(ByVal xlfn As ExcelCommandNumbers, operRes As XLOPER12, ByVal count As Long, opers() As XLOPER12) As Excel4ReturnCodes
+        Dim ptrs() As LongPtr, i As Long ', mdRet As Excel4ReturnCodes
+        ' If pExcel12 Then Else FetchExcel12EntryPt()
+        
+        If pExcel12 = 0 Then
+            Return xlretFailed
+        ElseIf count = 0 Then
+            Return pExcel12(xlfn, 0, ByVal 0, operRes)
+        Else
+            ReDim ptrs(count - 1)
+            For i = 0 To count - 1
+                ptrs (i) = VarPtr(opers(i))
+            Next
+        
+            Return pExcel12(xlfn, count, ptrs(0), operRes)
+        End If
+    End Function
+    ' Function Excel12v(ByVal xlfn As ExcelCommandNumbers, operRes As XLOPER12, ByVal count As Long) As Excel4ReturnCodes
+    '     Dim mdRet As Excel4ReturnCodes
+    '     If pExcel12 Then Else FetchExcel12EntryPt()
+    '     If pExcel12 = 0 Then
+    '         mdRet = xlretFailed
+    '     ElseIf count = 0 Then
+    '         mdRet = pExcel12(xlfn, count, ByVal 0, operRes)
+    '     Else
+    '         mdRet = xlretFailed
+    '     End If
+    '     Return mdRet
+    ' End Function
+
+    #End Region
+    ' int cdecl Excel12f(int xlfn, LPXLOPER12 pxResult, int count, ...)
+    ' {
+        ' int xlret;
+        ' va_list ppxArgs;
+ 
+        ' va_start(ppxArgs, count);
+        ' xlret = Excel12v(xlfn,pxResult,count,(LPXLOPER12 *)ppxArgs);
+        ' va_end(ppxArgs);
+ 
+        ' FreeAllTempMemory();
+
+        ' return xlret;
+    ' }
+    ' LPXLOPER12 TempStr12(const XCHAR* lpstr)
+    ' {
+        ' LPXLOPER12 lpx;
+        ' XCHAR* lps;
+        ' int len;
+
+        ' len = lstrlenW(lpstr);
+
+        ' lpx = (LPXLOPER12) GetTempMemory(sizeof(XLOPER12) + (len+1)*2);
+
+        ' if (!lpx)
+        ' {
+            ' return 0;
+        ' }
+
+        ' lps = (XCHAR*)((CHAR*)lpx + sizeof(XLOPER12));
+
+        ' lps[0] = (BYTE)len;
+        ' //can't wcscpy_s because of removal of null-termination
+        ' wmemcpy_s( lps+1, len+1, lpstr, len);
+        ' lpx->xltype = xltypeStr;
+        ' lpx->val.str = lps;
+
+        ' return lpx;
+    ' }  
+
+    Function GetXLString12(text As String) As XLOPER12
+        Dim text_len As Integer = Len(text)
+        Dim memSz As Long = (text_len + 2) * 2
+        Dim pxStr As LongPtr = AllocMem(memSz)           'GlobalAlloc(GPTR, memSz) 'Excel frees it, that's why this trouble
+        PutMem2 pxStr, text_len                          'CopyMemory ByVal pxStr, CByte(text_len), 1
+        vbaCopyBytes memSz - 2, pxStr + 2, StrPtr(text)  'CopyMemory ByVal pxStr + 2, ByVal StrPtr(text), (text_len) * 2
+        PutMemPtr_ GetXLString12, pxStr                  'CopyMemory ByVal VarPtr(GetXLString12), pxStr, LenB(pxStr)
+        GetXLString12.xltype = xltypeStr
+    End Function
+    Function GetXLInt12(ByVal n As Long) As XLOPER12
+        PutMem4_ GetXLInt12, n                          'CopyMemory ByVal VarPtr(GetXLInt12), n, LenB(Of Long)
+        GetXLInt12.xltype = xltypeInt
+    End Function
+    Function GetXLNum12(ByVal n As Double) As XLOPER12
+        GetMem8_ n, GetXLNum12                          'CopyMemory ByVal VarPtr(GetXLNum12), n, LenB(Of Double)
+        GetXLNum12.xltype = xltypeNum
+    End Function
+    Function GetXLBool12(ByVal b As Boolean) As XLOPER12
+        PutMem2_ GetXLBool12, b                         'CopyMemory ByVal VarPtr(GetXLBool12), b, 4
+        GetXLBool12.xltype = xltypeBool
+    End Function
+    Function GetXLErr12(ByVal errnum As Long) As XLOPER12
+        PutMem4_ GetXLErr12, errnum                     'CopyMemory ByVal VarPtr(GetXLErr12), errnum, LenB(Of Long)
+        GetXLErr12.xltype = xltypeErr
+    End Function
+    Function GetXLMissing12() As XLOPER12
+        GetXLMissing12.xltype = xltypeMissing
+    End Function
+    
+    Function GetXL12Str(sInp As String) As XL12Str
+        With GetXL12Str
+          .Str = ChrW(Len(sInp)) & sInp
+          .xltype = xltypeStr
+        End With
+    End Function
+    Function GetXL12StrPtr(sInp As String) As XL12Ptr
+        ' Dim strLen As Long = Len(sInp)
+        With GetXL12StrPtr
+        '   If strLen Then
+          .bTmpBuf = ChrW(Len(sInp)) & sInp
+          .ptr = VarPtr(.bTmpBuf(0))
+        '   Else: .ptr = VarPtr(xlNullString)
+        '   End If
+          .xltype = xltypeStr
+        End With
+    End Function
+    Function GetXL12Int(ByVal n As Long) As XL12Int
+        GetXL12Int.lVal = n                          'CopyMemory ByVal VarPtr(GetXLInt12), n, LenB(Of Long)
+        GetXL12Int.xltype = xltypeInt
+    End Function
+    Function GetXL12Num(ByVal n As Double) As XL12Num
+        GetXL12Num.num = n                         'CopyMemory ByVal VarPtr(GetXLNum12), n, LenB(Of Double)
+        GetXL12Num.xltype = xltypeNum
+    End Function
+    Function GetXL12BOOL(ByVal b As Boolean) As XL12BOOL
+        GetXL12BOOL.blVal = b                         'CopyMemory ByVal VarPtr(GetXLBool12), b, 4
+        GetXL12BOOL.xltype = xltypeBool
+    End Function
+    
+    ' [DllExport]
+    [Description("Getting xloper12 Multi array based on vb-based types. All numeric values ​​are converted to num (double)")]
+    Function GetXL12Multi(ByVal rows As Long, ByVal columns As Long, ParamArray values() As Variant) As XL12Multi
+        Dim i&, val As Variant
+        ' If Rows < 0 Or columns < 0 Then Exit Function 'In this case, there are not enough unsigned
+        Dim cntElems&: cntElems = rows * columns
+        Dim Ub&: Ub = UBound(values)
+        If Ub > -1 Then
+            On Error Resume Next
+            With GetXL12Multi
+                .rows = rows
+                .columns = columns
+                cntElems = cntElems - 1
+                ReDim .xTmpBuf(cntElems)
+                If Ub > cntElems Then Ub = cntElems
+                For i = 0 To Ub
+                    ' If IsObject(values(i)) Or IsError(values(i)) Then Continue For
+                    val = values(i)
+                    Select Case VarType(val)
+                    Case vbString
+                        .xTmpBuf(i) = GetXL12StrPtr(CStr(val))
+                    Case vbDouble, vbLong, vbDate, vbLongLong, vbSingle, vbInteger, vbByte, vbCurrency
+                        With .xTmpBuf(i)
+                          PutDbl(.ptr) = val
+                          .xltype = xltypeNum
+                        End With
+                    Case vbBoolean
+                        With .xTmpBuf(i)
+                          PutByte(.ptr) = val
+                          .xltype = xltypeBool
+                        End With
+                    Case Else 'vbEmpty
+                        .xTmpBuf(i).xltype = xltypeMissing
+                    End Select
+                Next
+                .lparray = VarPtr(.xTmpBuf(0))
+                .xltype = xltypeMulti
+            End With
+        End If
+    End Function
+    
+    [DllExport]
+    Function GetXLActiveRef12(ByVal rwFirst As Long, ByVal rwLast As Long, ByVal colFirst As Long, ByVal colLast As Long) As XLOPER12
+        Dim lpmref As LongPtr = cMemPool.Alloc(LenB(Of XLMREF12))
+        Dim dummy(0) As XLOPER12
+    
+        If Excel12v(xlSheetId, GetXLActiveRef12, 0, dummy) = xlretSuccess Then
+            GetXLActiveRef12.xltype = xltypeRef
+            PutMemPtr_ GetXLActiveRef12, lpmref             'CopyMemory GetXLActiveRef12, lpmref, LenB(Of LongPtr)
+            With CType(Of XLMREF12)(lpmref)
+                .count = 1
+                .reftbl(0).rwFirst = rwFirst
+                .reftbl(0).rwLast = rwLast
+                .reftbl(0).colFirst = colFirst
+                .reftbl(0).colLast = colLast
+            End With
+        Else: Exit Function         'We can't return or check for null pointer, so the caller will have to check xlType <> 0
+        End If
+    End Function
+    'Getting a single reference (one range) on the active sheet
+    Function GetXL12SRef(ByVal rwFirst As Long, ByVal rwLast As Long, ByVal colFirst As Long, ByVal colLast As Long) As XL12SRef
+        With GetXL12SRef
+          .count = 1
+          With .ref
+            .rwFirst = rwFirst
+            .rwLast = rwLast
+            .colFirst = colFirst
+            .colLast = colLast
+          End With
+          .xltype = xltypeSRef
+        End With
+    End Function
+    'Getting a single (SRef) external reference (on another sheet)
+    Function GetXL12Ref(ByVal idSheet As LongPtr, ByVal rwFirst As Long, ByVal rwLast As Long, ByVal colFirst As Long, ByVal colLast As Long) As XL12Ref
+        With GetXL12Ref
+          .idSheet = idSheet
+          ReDim .TmpRefs(1)         'create a temporary buffer
+          .TmpRefs(0).colLast = 1   '.TmpRefs(0).colLast = mref.count
+          With .TmpRefs(1)
+            .rwFirst = rwFirst
+            .rwLast = rwLast
+            .colFirst = colFirst
+            .colLast = colLast
+          End With
+          .pMref = VarPtr(.TmpRefs(0).colLast)
+          .xltype = xltypeRef
+        End With
+    End Function
+    Function GetXLActiveRow12(ByVal rw As Long) As XLOPER12
+        Return GetXLActiveRef12(rw, rw, 0, &H00003FFF)
+    End Function
+    Function GetXLActiveColumn12(ByVal col As Long) As XLOPER12
+        Return GetXLActiveRef12(0, &H000FFFFF&, col, col)
+    End Function
+    Function GetXLActiveCell12(ByVal rw As Long, ByVal col As Long) As XLOPER12
+        Return GetXLActiveRef12(rw, rw, col, col)
+    End Function
+    
+    Function GetXL12ActiveColumn(ByVal col As Long) As XL12SRef
+        Return GetXL12SRef(0, &H000FFFFF&, col, col)
+    End Function
+    Function GetXL12ActiveRow(ByVal rw As Long) As XL12SRef
+        Return GetXL12SRef(rw, rw, 0, &H00003FFF)
+    End Function
+    [DllExport]
+    Function GetXL12ActiveCell(ByVal rw As Long, ByVal col As Long) As XL12SRef
+        Return GetXL12SRef(rw, rw, col, col)
+    End Function
+    Function GetSheetID(Optional sShName As String) As LongPtr
+      Dim xRef As XL12Ref
+      If Len(sShName) Then
+          If pExcel12(xlSheetId, 1, VarPtr(GetXL12Str(sShName)), xRef) = xlretSuccess Then
+              GetSheetID = xRef.idSheet
+          End If
+      Else
+          If pExcel12(xlSheetId, 0, 0, xRef) = xlretSuccess Then  'getting the active sheet ID
+              GetSheetID = xRef.idSheet
+          End If
+      End If
+  End Function
+    Function Xloper12NumValue(xNum As XLOPER12) As Double
+        If xNum.xltype <> xltypeNum Then Exit Function
+        GetMem8_ xNum, Xloper12NumValue 'CopyMemory Xloper12NumValue, xNum, LenB(Of Double)
+    End Function
+    Function Xloper12IntValue(xInt As XLOPER12) As Long
+        If xInt.xltype <> xltypeInt Then Exit Function
+        GetMem4_ xInt, Xloper12IntValue 'CopyMemory Xloper12IntValue, xInt, LenB(Of Long)
+    End Function
+    Function Xloper12ErrValue(xErr As XLOPER12) As XloperErrorCodes'Long
+        If xErr.xltype <> xltypeErr Then Exit Function
+        GetMem4_ xErr, Xloper12ErrValue 'CopyMemory Xloper12ErrValue, x, LenB(Of Long)
+    End Function
+    Function Xloper12BoolValue(xBool As XLOPER12) As Boolean
+        If xBool.xltype <> xltypeBool Then Exit Function
+        ' Dim b As Long
+        GetMem2_ xBool, Xloper12BoolValue 'CopyMemory b, x, LenB(Of Long)
+        ' Xloper12BoolValue = b   'Return If(b, True, False)
+    End Function
+    Function Xloper12StrValue(xStr As XLOPER12) As String
+        If xStr.xltype <> xltypeStr Then Exit Function
+        Dim lp As LongPtr
+        GetMemPtr_ xStr, lp               'CopyMemory lp, xStr, LenB(Of LongPtr)    
+        If lp Then SysReAllocStringW VarPtr(Xloper12StrValue), lp
+    End Function
+    Function Xloper12StrValue2(x As XLOPER12) As String
+        If x.xltype <> xltypeStr Then Exit Function
+        Dim pStr As LongPtr
+        GetMemPtr_ x, pStr
+    
+        Dim strLen As Integer
+        GetMem2 pStr, strLen
+        If strLen Then
+            Xloper12StrValue2 = String$(strLen, vbNullChar)
+            vbaCopyBytes(strLen * 2, StrPtr(Xloper12StrValue2), pStr + 2)
+        End If
+    End Function
+    Function XL12StrValue(xStr As XLOPER12) As String
+      If xStr.xltype <> xltypeStr Then Exit Function
+      Dim pxStr As LongPtr, strLen As Integer
+      GetMemPtr_ xStr, pxStr
+      GetMem2 pxStr, strLen
+      If strLen Then PutMemPtr XL12StrValue, SysAllocStringLen(pxStr + 2, strLen)
+  End Function
+  Function XL12StrToBstr(ByVal pxStr As LongPtr) As String
+      Dim strLen As Integer
+      GetMem2 pxStr, strLen
+      If strLen Then PutMemPtr XL12StrToBstr, SysAllocStringLen(pxStr + 2, strLen)
+  End Function
+    ' Private Sub testLStrLen()
+    '     Dim s$, s2$, lp As LongPtr, strLen&
+    '     s = "asfdsaff"
+    '     lp = StrPtr(s)
+    '     strLen = lstrlenW(ByVal lp)
+    '     s2 = String$(strLen, vbNullChar)
+    '     vbaCopyBytes(strLen * 2, StrPtr(s2), lp)
+    ' End Sub
+    Private Function Xloper12SRefValue(xSRef As XLOPER12) As Variant
+        Dim xVal As XLOPER12
+        If xSRef.xltype = xltypeSRef Then
+            pExcel12(xlCoerce, 1, VarPtr(xSRef), xVal)
+            Select Case xVal.xltype
+            Case xltypeNum:   Return Xloper12NumValue(xVal)
+            Case xltypeStr:   Return XL12StrValue(xVal)
+            Case xltypeBool:  Return Xloper12BoolValue(xVal)
+            Case xltypeInt:   Return Xloper12IntValue(xVal)
+            Case xltypeErr:   Return Xloper12ErrValue(xVal)
+            ' Case xltypeDate
+            End Select
+        End If
+    End Function
+    ' Private Function Xloper12SRefValue(x As XLOPER12) As Variant
+    '     Static blInit As Boolean
+    '     Static xlNum() As XLOPER12, xlStr() As XLOPER12, xlBool() As XLOPER12
+    '     Dim xlt(0) As XLOPER12
+    '     Dim error As XloperErrorCodes'= -1
+    '     Dim vRet As Variant
+    '     If Not blInit Then
+    '         ReDim xlNum(1):     xlNum(1) = GetXLNum12(0)
+    '         ReDim xlStr(1):     xlStr(1) = GetXLString12(vbNullString)
+    '         ReDim xlBool(1):    xlBool(1) = GetXLBool12(False)
+    '         blInit = True
+    '     End If
+        
+    '     xlNum(0) = x
+    '     If Excel12v(xlCoerce, xlt(0), 2, xlNum) = 0 Then
+    '         vRet = Xloper12NumValue(xlt(0))
+    '         Excel12v(xlFree, vbNullPtr, 1, xlt)
+    '         Return vRet
+    '     End If
+    '     xlStr(0) = x
+    '     If Excel12v(xlCoerce, xlt(0), 2, xlStr) = 0 Then
+    '         vRet = Xloper12StrValue(xlt(0))
+    '         Excel12v(xlFree, vbNullPtr, 1, xlt)
+    '         Return vRet
+    '     End If
+    '     xlBool(0) = x
+    '     If Excel12v(xlCoerce, xlt(0), 2, xlBool) = 0 Then
+    '         vRet = Xloper12BoolValue(xlt(0))
+    '         Excel12v(xlFree, vbNullPtr, 1, xlt)
+    '         Return vRet
+    '     End If
+    '     Excel12v(xlFree, vbNullPtr, 1, xlt)
+    ' End Function
+    [DllExport]
+    Function Xloper12ToVariant(x As XLOPER12) As Variant
+        Select Case x.xltype
+        Case xltypeSRef: Return Xloper12SRefValue(x)
+        Case xltypeNum: Return Xloper12NumValue(x)      'Double
+        Case xltypeStr: Return Xloper12StrValue(x)      'String
+        Case xltypeBool: Return Xloper12BoolValue(x)    'Booleant
+        Case xltypeInt: Return Xloper12IntValue(x)      'Long
+        Case xltypeErr: Return Xloper12ErrValue(x)      'Error
+        Case Else: Return x.xltype
+        End Select
+    End Function
+    Function GetThisAppObj() As Object
+        Dim xHwnd As XL12Ptr, hWnd1 As LongPtr, guid^(1)
+    
+        pExcel12 xlGetHwnd, 0, ByVal 0, xHwnd
+        hWnd1 = FindWindowExW(xHwnd.ptr, 0, "XLDESK")
+        hWnd1 = FindWindowExW(hWnd1, 0, "EXCEL7")
+        guid(0) = &H20400: guid(1) = &H46000000000000C0
+        
+        AccessibleObjectFromWindow hWnd1, &HFFFFFFF0, guid(0), GetThisAppObj
+    End Function
+    Function GetThisAppObj2() As Object
+        Return GetObject(, "Excel.Application")
+    End Function
+    ' void WINAPI xlAutoFree12(LPXLOPER pxFree)
+    ' {
+    '     if(pxFree->xltype & xltypeMulti)
+    '     {
+    ' // Assume all string elements were allocated using malloc, and
+    ' // need to be freed using free. Then free the array itself.
+    '         int size = pxFree->val.array.rows *
+    '             pxFree->val.array.columns;
+    '         LPXLOPER12 p = pxFree->val.array.lparray;
+    '         for(; size-- > 0; p++) // check elements for strings
+    '             if(p->xltype == xltypeStr)
+    '                 free(p->val.str);
+    '         free(pxFree->val.array.lparray);
+    '     }
+    '     else if(pxFree->xltype & xltypeStr)
+    '     {
+    '         free(pxFree->val.str);
+    '     }
+    '     else if(pxFree->xltype & xltypeRef)
+    '     {
+    '         free(pxFree->val.mref.lpmref);
+    '     }
+    ' // Assume pxFree was itself dynamically allocated using malloc.
+    '     free(pxFree);
+    ' }
+    ' [Description("")]
+    Public Delegate Sub xlAutoFree12_deleg (xFree As Any)
+    [DllExport]
+    Sub xlAutoFree12(xFree As XLOPER12)
+        Dim xAr() As XL12Ptr
+        ' If VarPtr(xFree) Then Else Exit Sub
+        With xFree
+            If .pVbDataSA Then
+                Select Case .xltype
+                Case xltypeMulti
+                    PutSA(xAr) = .pVbDataSA
+                    Erase xAr 'It should happen automatically
+                Case xltypeStr, xltypeRef
+                    SafeArrayDestroy .pVbDataSA
+                End Select
+                .pVbDataSA = 0
+            Else
+                Select Case .xltype
+                Case xltypeMulti
+                    '// Assume all string elements were allocated using malloc, and
+                    '// need to be freed using free. Then free the array itself.
+                    CType(Of GetAryMapXl12_deleg)(AddressOf GetAryMapXl12)(xFree, xAr)
+                    For i As Long = 0 To UBound(xAr)
+                        With xAr(i)
+                            If .xltype And xltypeStr Then
+                                If .ptr Then FreeMem .ptr
+                            End If
+                        End With
+                    Next
+                    Erase xAr
+                Case xltypeStr, xltypeRef
+                    If .val Then FreeMem .val
+                End Select
+            End If
+            'If xFree itself was dynamically allocated on the heap, then we pre-add information _
+            about this to the xloper12 structure, in case it needs to be freed later using xlAutoFree12
+            If .padding And xlbitDLLFree Then FreeMem VarPtr(xFree) Else .xltype = xltypeMissing
+        End With
+    End Sub
+    Public Delegate Sub GetAryMapXl12_deleg (xMulti As Any, Ary() As Any, Optional ByVal is2D As Boolean)
+    Public pGetAryMapXl12 As GetAryMapXl12_deleg
+    [Description("Creating an xloper12 safearray mapped to the xloper12 multi array data")]
+    Sub GetAryMapXl12(xMulti As XL12Multi, ByVal pAry As LongPtr, Optional ByVal is2D As Boolean)
+        If pAry > 0 Then Else Exit Sub
+        If xMulti.lparray > 0 Then Else Exit Sub
+        Dim pSA As LongPtr = AllocSA(1 - is2D)
+        With CType(Of SAFEARRAY2D)(pSA)
+            .cbElements = 32
+            .fFeatures = 128
+            .pvData = xMulti.lparray
+            If .cDims = 1 Then
+                .Bounds(0).cCount = xMulti.rows * xMulti.columns
+            Else
+                .Bounds(0).cCount = xMulti.rows
+                .Bounds(1).cCount = xMulti.columns
+            End If
+        End With
+        PutMemPtr pAry, pSA
+    End Sub
+    Function GetAryMapXl12Ptr(xMulti As XL12Multi, Optional ByVal is2D As Boolean) As XL12Ptr()
+        If xMulti.lparray > 0 Then Else Exit Function
+        Dim pSA As LongPtr = AllocSA(1 - is2D)
+        With CType(Of SAFEARRAY2D)(pSA)
+            .cbElements = 32
+            .fFeatures = 128
+            .pvData = xMulti.lparray
+            If .cDims = 1 Then
+                .Bounds(0).cCount = xMulti.rows * xMulti.columns
+            Else
+                .Bounds(0).cCount = xMulti.rows
+                .Bounds(1).cCount = xMulti.columns
+            End If
+        End With
+        PutSA(GetAryMapXl12Ptr) = pSA
+    End Function
+    [Description("Equival to Erase Arr")]
+    Sub AryUnMap(ByVal pAry As LongPtr)
+        FreeSA GetPtr(pAry)
+        PutMemPtr pAry, 0
+    End Sub
+End Module
+
+[PredeclaredId]
+Class cMemPool
+    ' Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As LongPtr)
+    Private Declare PtrSafe Function GlobalAlloc Lib "kernel32" (ByVal uFlags As GMEM, ByVal dwBytes As LongPtr) As LongPtr
+    Private Declare PtrSafe Function GlobalFree Lib "kernel32" (ByVal hMem As LongPtr) As LongPtr
+    Private Enum GMEM
+        GMEM_FIXED = &H0000
+        GMEM_MOVEABLE = &H0002
+        GMEM_NOCOMPACT = &H0010
+        GMEM_NODISCARD = &H0020
+        GMEM_ZEROINIT = &H0040
+        GMEM_MODIFY = &H0080
+        GMEM_DISCARDABLE = &H0100
+        GMEM_NOT_BANKED = &H1000
+        GMEM_SHARE = &H2000
+        GMEM_DDESHARE = &H2000
+        GMEM_NOTIFY = &H4000
+        GMEM_LOWER = &H1000
+        GMEM_VALID_FLAGS = &H7F72
+        GMEM_INVALID_HANDLE = &H8000&
+        GHND = GMEM_MOVEABLE Or GMEM_ZEROINIT
+        GPTR = GMEM_FIXED Or GMEM_ZEROINIT
+        GMEM_DISCARDED = &H4000
+        GMEM_LOCKCOUNT = &H00FF
+    End Enum
+    Private hMem As LongPtr
+    Private arMem() As Byte
+    Private Const MemSize = 10240
+    Private lOffset As LongPtr
+    
+    Private Sub Class_Initialize()
+        ReDim arMem(MemSize - 1)
+        hMem = VarPtr(arMem(0))
+    End Sub
+    
+    Function Alloc(cb As LongPtr) As LongPtr
+        Alloc = hMem + cb
+        lOffset += cb
+    End Function
+End Class

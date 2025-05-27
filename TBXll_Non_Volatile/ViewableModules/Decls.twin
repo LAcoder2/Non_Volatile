@@ -1,0 +1,219 @@
+Module Decls
+
+  #If win64 Then
+    Public Const ptrSz = 8^
+    public const vbLongPtr = vbLongLong
+  #Else
+    Public Const ptrSz = 4&
+    Public Const vbLongPtr = vbLong
+  #End If
+  Public Type SAFEARRAYBOUND
+      cCount              As Long
+      lBound              As Long
+  End Type
+  Private Type SAFEARRAY1D
+      cDims               As Integer
+      fFeatures           As Integer
+      cbElements          As Long
+      cLocks              As Long
+  '  #If Win64 Then
+  '    padding      As Long
+  '  #End If
+      pvData              As LongPtr
+      Bounds              As SAFEARRAYBOUND
+  End Type
+  Public Type SAFEARRAY2D
+      cDims               As Integer
+      fFeatures           As Integer
+      cbElements          As Long
+      cLocks              As Long
+  '  #If Win64 Then
+  '    padding           As Long
+  '  #End If
+      pvData              As LongPtr
+      Bounds(1)           As SAFEARRAYBOUND
+  End Type
+' typedef struct _SECURITY_ATTRIBUTES {
+'   DWORD  nLength;
+'   LPVOID lpSecurityDescriptor;
+'   BOOL   bInheritHandle;
+' } SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
+Public Type SECURITY_ATTRIBUTES
+    nLength As Long
+    lpSecurityDescriptor As LongPtr
+    bInheritHandle As BOOL
+End Type
+Public Type tVarStr
+    vt As Integer
+    iunuse As Integer
+    lunuse As Long
+    str As String
+    lpunuse As LongPtr
+End Type
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Dst As Any, Src As Any, ByVal Ln As LongPtr)
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub Copy32 Lib "kernel32" Alias "RtlMoveMemory" (Dst As Any, Src As Any, Optional ByVal Ln As LongPtr = 32)
+
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (Destination As Any, ByVal Length As LongPtr)
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Function SysReAllocStringW Lib "oleaut32" Alias "SysReAllocString" (ByVal pBSTR As LongPtr, Optional ByVal pszStrPtr As LongPtr) As Long
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Function GlobalAlloc Lib "kernel32" (ByVal uFlags As GMEM, ByVal dwBytes As LongPtr) As LongPtr
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Function SysAllocStringLen Lib "OleAut32.dll" (ByVal pstrIn As LongPtr, ByVal ui As Long) As LongPtr
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Function SysAllocStringLenS Lib "oleaut32" Alias "SysAllocStringLen" (ByVal Value As Any, ByVal Length As Long) As String
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub GetMem2_ Lib "<hiddenmodule>" Alias "#4" (Src As Any, Dst As Any)
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub GetMem4_ Lib "<hiddenmodule>" Alias "#5" (Src As Any, Dst As Any)
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub GetMem8_ Lib "<hiddenmodule>" Alias "#6" (Src As Any, Dst As Any)
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub GetMemPtr_ Lib "<hiddenmodule>" Alias "#7" (Src As Any, Dst As Any)
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub PutMem2_ Lib "<hiddenmodule>" Alias "#9" (Dst As Any, ByVal value As Any)
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub PutMem4_ Lib "<hiddenmodule>" Alias "#10" (Dst As Any, ByVal value As Long)
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub PutMemPtr_ Lib "<hiddenmodule>" Alias "#12" (Dst As Any, ByVal value As LongPtr)
+
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Property Let PutByte Lib "<hiddenmodule>" Alias "#8" (Dst As LongPtr, ByVal value As Byte)
+
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Property Let PutLng Lib "<hiddenmodule>" Alias "#10" (Dst As Any, ByVal lVal As Long)           'Alias PutMem4
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Property Let PutPtr Lib "<hiddenmodule>" Alias "#12" (Dst As Any, ByVal pVal As LongPtr)
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Property Let PutSA Lib "<hiddenmodule>" Alias "#12" (Dst() As Any, ByVal pSA As LongPtr)
+[UseGetLastError(False), DLLStackCheck(False), _
+    Description("Скопировать значение double (dbVal) в Dst")]
+DeclareWide PtrSafe Property Let PutDbl Lib "<hiddenmodule>" Alias "#11" (Dst As Any, ByVal dbVal As Double)
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Function GetLng Lib "<hiddenmodule>" Alias "#5" (Src As Any) As Long            'Alias GetMem4
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Function GetDbl Lib "<hiddenmodule>" Alias "#6" (Src As Any) As Double            'Alias GetMem4
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Function GetPtr Lib "<hiddenmodule>" Alias "#7" (Src As Any) As LongPtr
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Function GetSA Lib "<hiddenmodule>" Alias "#7" (Src() As Any) As LongPtr
+[PreserveSig(False), UseGetLastError(False), DLLStackCheck(False), _
+    Description("Creating a SafeArray Descriptor")]
+DeclareWide PtrSafe Function AllocSA Lib "oleaut32.dll" Alias "SafeArrayAllocDescriptor" ( _
+            ByVal cDims As Long) As LongPtr
+
+[PreserveSig(True), UseGetLastError(False), DLLStackCheck(False)]
+Public DeclareWide PtrSafe Sub MovePtr Lib "<hiddenmodule>" Alias "#116" (dst As Any, src As Any)
+
+[UseGetLastError(False), DLLStackCheck(False)]
+Declare PtrSafe Function GetModuleHandleW Lib "kernel32" (Optional ByVal lpModuleName As LongPtr) As LongPtr
+[UseGetLastError(False), DLLStackCheck(False)]
+Declare PtrSafe Function GetProcAddress Lib "kernel32" (ByVal hModule As LongPtr, ByVal lpProcName As String) As LongPtr
+[UseGetLastError(False), DLLStackCheck(False)]
+Declare PtrSafe Sub Sleep Lib "kernel32.dll" (ByVal dwMilliseconds As Long)
+Declare PtrSafe Function BeepApi Lib "kernel32" Alias "Beep" ( _
+        ByVal dwFreq As LongPtr, ByVal dwDuration As LongPtr) As LongPtr
+' HANDLE CreateThread(
+' [in, optional]  LPSECURITY_ATTRIBUTES   lpThreadAttributes,
+' [in]            SIZE_T                  dwStackSize,
+' [in]            LPTHREAD_START_ROUTINE  lpStartAddress,
+' [in, optional]  __drv_aliasesMem LPVOID lpParameter,
+' [in]            DWORD                   dwCreationFlags,
+' [out, optional] LPDWORD                 lpThreadId
+' );
+' DeclareWide PtrSafe Function CreateThread Lib "kernel32.dll" ( _
+'             lpThreadAttributes As SECURITY_ATTRIBUTES, _
+'       ByVal dwStackSize As LongPtr, _
+'             lpStartAddress As LongPtr, _
+'             lpParameter As Any, _
+'       ByVal dwCreationFlags As Long, _
+'             lpThreadId As Long) As Long
+' DeclareWide PtrSafe Function CreateThread Lib "kernel32.dll" ( _ /*!!!!!!!!!!!!!!*/
+'       ByVal lpThreadAttributes As LongPtr, _
+'       ByVal dwStackSize As LongPtr, _
+'             lpStartAddress As LongPtr, _
+'             lpParameter As Any, _
+'       ByVal dwCreationFlags As Long, _
+'             lpThreadId As Long) As LongPtr
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Function CreateThread Lib "kernel32" ( _
+                  lpThreadAttributes As Any, _
+            ByVal dwStackSize As Long, _
+            ByVal lpStartAddress As LongPtr, _
+                  lpParameter As Any, _
+            ByVal dwCreationFlags As Long, _
+                  lpThreadId As Long) As LongPtr
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Function WaitForSingleObject Lib "kernel32" ( _
+            ByVal hHandle As LongPtr, ByVal dwMilliseconds As Long) As Long
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub ExitThread Lib "kernel32.dll" (Optional ByVal dwExitCode As Long)
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Function AccessibleObjectFromWindow Lib "oleacc" ( _
+            ByVal hwnd As LongPtr, ByVal dwId As Long, riid As Any, ppvObject As Object) As Long
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Function FindWindowExW Lib "user32" ( _
+            Optional ByVal hwndParent As LongPtr, _
+            Optional ByVal hwndChildAfter As LongPtr, _
+            Optional ByVal lpszClass As String, _
+            Optional ByVal lpszWindow As String) As LongPtr
+' [UseGetLastError(False), DLLStackCheck(False)]
+' DeclareWide PtrSafe Function FindWindowExW Lib "user32" ( _
+'             ByVal hwndParent As LongPtr, ByVal hwndChildAfter As LongPtr, _
+'             ByVal lpszClass As LongPtr, ByVal lpszWindow As LongPtr) As LongPtr
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub SafeArrayAllocDescriptorEx Lib "oleaut32.dll" ( _
+            ByVal vt As VbVarType, _
+            ByVal cDims As Long, _
+                  saOut() As Any)
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub SafeArrayAllocDescriptor Lib "oleaut32.dll" ( _
+            ByVal cDims As Long, _
+                  ppsaOut As LongPtr)
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub SafeArrayDestroyDescriptor Lib "oleaut32.dll" (ByVal pSA As LongPtr)
+[UseGetLastError(False), DLLStackCheck(False)]
+DeclareWide PtrSafe Sub FreeSA Lib "oleaut32.dll" Alias "SafeArrayDestroyDescriptor" (ByVal pSA As LongPtr)
+[UseGetLastError(False), DLLStackCheck(False), _
+ Description("Destroys an existing array descriptor and all of the data in the array. If objects are stored in the array, Release is called on each object in the array.")]
+DeclareWide PtrSafe Function SafeArrayDestroy Lib "oleaut32.dll" (ByVal pSA As LongPtr) As Long
+
+Public Enum GMEM
+    GMEM_FIXED = &H0000
+    GMEM_MOVEABLE = &H0002
+    GMEM_NOCOMPACT = &H0010
+    GMEM_NODISCARD = &H0020
+    GMEM_ZEROINIT = &H0040
+    GMEM_MODIFY = &H0080
+    GMEM_DISCARDABLE = &H0100
+    GMEM_NOT_BANKED = &H1000
+    GMEM_SHARE = &H2000
+    GMEM_DDESHARE = &H2000
+    GMEM_NOTIFY = &H4000
+    GMEM_LOWER = &H1000
+    GMEM_VALID_FLAGS = &H7F72
+    GMEM_INVALID_HANDLE = &H8000&
+    GHND = GMEM_MOVEABLE Or GMEM_ZEROINIT
+    GPTR = GMEM_FIXED Or GMEM_ZEROINIT
+    GMEM_DISCARDED = &H4000
+    GMEM_LOCKCOUNT = &H00FF
+End Enum
+
+Private Sub TEstArray()
+    Dim lAr&(), lAr2&(), pSA As LongPtr, lRes&
+    lAr = Array(2, 3)
+    lRes = SafeArrayDestroy(GetSA(lAr))
+    PutSA(lAr) = 0
+    pSA = AllocSA(1)
+    Debug.Print GetSA(lAr2)
+    PutSA(lAr2) = pSA ' GetSA(lAr)
+    Debug.Print GetSA(lAr2) ; pSA
+    ' PutSA(lAr) = 0
+    ' Debug.Print IsArrayInitialized(lAr)
+    ' ' SafeArrayDestroyDescriptor GetSA(lAr)
+    ' Debug.Print IsArrayInitialized(lAr)
+End Sub
+End Module

@@ -1,0 +1,255 @@
+Module Tests
+Private Type tTest
+    Val() As Long
+    l As Long
+    i As Integer
+End Type
+Private Sub TestType()
+    Dim tt As tTest, a&
+    
+    tt = GetTypeExempl(a)
+    Debug.Print VarPtr(tt.Val(0))
+End Sub
+
+Private Function GetTypeExempl(a&) As tTest
+    With GetTypeExempl
+        .Val = Array(2, 5)
+        Debug.Print VarPtr(.Val(0))
+    End With
+End Function
+Private Sub TestAny()
+    Dim lAr() As Long
+    ReDim lAr(3)
+    lAr(2) = 125
+    Debug.Print VarPtr(lAr(0))
+    TestAny_ lAr
+End Sub
+Private Sub TestAny_(args() As Any)
+    Debug.Print VarPtr(args(0))
+End Sub
+Private Sub TestString()
+    Const sConst As String = "dcba"
+    Dim sFix As string * 4 = "abcd"
+    Dim iAr(3) As Integer
+    Dim pStr As LongPtr, pVar As LongPtr
+    
+    
+    ' CopyMemory iAr(0), ByVal VarPtr(sFix), 8
+    CopyMemory iAr(0), ByVal sFix, 4
+    
+    
+    pVar = VarPtr(sConst)
+    GetMemPtr pVar, pStr
+    CopyMemory iAr(0), ByVal pStr, 8
+    
+    Debug.Print StrPtr(sConst)
+    Debug.Print StrPtr(sConst)
+    Debug.Print StrPtr(sFix)
+    Debug.Print StrPtr(sFix)
+End Sub
+Sub TestFixString(Optional ByVal sFix As String)
+    
+End Sub
+Private Type t4charString
+    sFix As string * 4
+End Type
+Private Type t4charInteger
+    iChars(3) As Integer
+End Type
+
+Private Sub Testt4charString()
+    Dim t4c As t4charString, t4i As t4charInteger, iChars(3) As Integer
+    Dim pStrBuf As LongPtr, p2 As LongPtr
+    t4c.sFix = "abcd"
+    LSet t4i = t4c
+    GetMemPtr_ t4c, pStrBuf
+    GetMemPtr_ t4c, pStrBuf
+    CopyMemory p2, ByVal pStrBuf, LenB(Of LongPtr)
+    CopyMemory iChars(0), ByVal pStrBuf, 8
+    Debug.Print pStrBuf
+    
+    Testt4charString_ t4c
+End Sub
+Private Sub TestMovePtr()
+    Dim pSA As LongPtr, pSA2 As LongPtr
+    Dim xAr() As XL12Ptr, xAr2() As XL12Ptr
+    ReDim xAr(1)
+    xAr(1).ptr = 456
+    pSA2 = GetPtr(xAr)
+    MovePtr pSA, xAr
+    
+    PutPtr(xAr2) = pSA
+    ' PutPtr(xAr) = 0
+End Sub
+Private Sub Testt4charString_(t4c As t4charString)
+    Dim pStrBuf As LongPtr
+    GetMemPtr_ t4c, pStrBuf
+    Debug.Print pStrBuf
+End Sub
+Private Sub TestAddressOfOwerload()
+    Dim pFn As LongPtr
+    pFn = GetAddr(AddressOf Excel12v)
+End Sub
+Private Function GetAddr(ByVal lpFn As LongPtr) As LongPtr
+    Return lpFn
+End Function
+Private Sub TestPreseveSigFalse()
+    Dim d1#, l1&, d2#, l2&
+    
+    ' d1 = 123.456
+    ' d2 = GetDbl(d1)
+    l1 = 854
+    ' put4
+    ' d1 = GetLng(l1)
+    PutLng(l2) = l1
+    ' l2 = GetLng(l1)
+End Sub
+Private Sub TestEraseArray()
+    Dim dAr#()
+    ReDim dAr(3)
+    Erase dAr
+    Debug.Print UBound(dAr)
+End Sub
+' Private Sub TestLset()
+'     Dim d#, ll^, d2#
+    
+'     d = 456.8798
+'     LSet ll = d
+'     LSet d2 = ll
+    
+' End Sub
+Private Sub TestTypeOfAddressOf()
+    Dim sAr() As String = Split("sdfda, kj;lkljk, iuorew", ", ")
+    
+    Debug.Print GetSA(sAr)
+    CType(Of SimpleSub_Deleg)(AddressOf SimpleSub)(sAr)
+    
+    
+End Sub
+Private Delegate Sub SimpleSub_Deleg (var As Any)
+Private Sub SimpleSub(arg As LongPtr)
+    Debug.Print arg
+End Sub
+Private Sub jumpToHiddenModule()
+    PutMemPtr 0, 0
+End Sub
+Private Sub TestPutDbl()
+    Dim d1&, d2#
+    d1 = 54654
+    PutDbl(d2) = d1
+End Sub
+Private Sub Test_ParamArray()
+    ' pTestParamArray = CType(Of TestParamArrayDeleg)(AddressOf TestParamArray_)
+    PutPtr(pTestParamArray) = AddressOf TestParamArray
+    Dim s As Variant = "sasdfdsa"
+    Debug.Print StrPtr(s)
+    pTestParamArray (s), "lkjljlkl" , "poippi"
+End Sub
+Private Delegate Sub TestParamArrayDeleg (ParamArray args() As Variant)
+Private pTestParamArray As TestParamArrayDeleg
+Private Sub TestParamArray(args() As tVarStr)
+    Debug.Print StrPtr(args(0).str)
+End Sub
+Private Sub TestSysAllocStringLen()
+    Dim sTmp As String, s2 As String
+    
+    sTmp = "dsfafasfff"
+    ' s2 = SysAllocStringLenS(sTmp, Len(sTmp))
+    PutMemPtr_ s2, SysAllocStringLen(StrPtr(sTmp), Len(sTmp))
+    ' CopyMemory ByVal VarPtr(s2), SysAllocStringLen (StrPtr(sTmp), Len(sTmp)), ptrSz
+    ' s2
+End Sub
+Private Sub TestSplit()
+    Dim sAr$()
+    sAr = Split(vbNullString)
+    
+End Sub
+Private Sub Test_FindWindowExW()
+    Dim hWnd1 As LongPtr, acc As Object, guid^(1)
+    
+    guid(0) = &H20400: guid(1) = &H46000000000000C0
+    hWnd1 = FindWindowExW(0, hWnd1, "XLMAIN")
+    hWnd1 = FindWindowExW(hWnd1, 0, "XLDESK")
+    hWnd1 = FindWindowExW(hWnd1, 0, "EXCEL7")
+    If AccessibleObjectFromWindow(hWnd1, &HFFFFFFF0, guid(0), acc) = 0 Then
+        Debug.Print acc.Application.Hwnd
+    End If
+End Sub
+'https://learn.microsoft.com/en-us/office/client-developer/excel/xlautofree-xlautofree12
+' LPXLOPER12 WINAPI fArray(void)
+' {
+'     LPXLOPER12 pxArray;
+'     Static XLOPER12 xMulti;
+'     int i;
+'     int rwcol;
+'     xMulti.xltype = xltypeMulti | xlbitDLLFree;
+'     xMulti.val.array.columns = 1;
+'     xMulti.val.array.rows = 8;
+'     // For large values of rows and columns, this would overflow
+'     // use __int64 in that case and return an error if rwcol
+'     // contains a number that won't fit in sizeof(int) bytes
+'     rwcol = xMulti.val.array.columns * xMulti.val.array.rows; 
+'     pxArray = (LPXLOPER12)GlobalLock(hArray = GlobalAlloc(GMEM_ZEROINIT, rwcol * sizeof(XLOPER12)));
+'     xMulti.val.array.lparray = pxArray;
+'     for(i = 0; i < rwcol; i++) 
+'     {
+'         pxArray[i].xltype = xltypeInt;
+'         pxArray[i].val.w = i;
+'     }
+' // Word of caution - returning Static XLOPERs/XLOPER12s is not thread safe
+' // for UDFs declared as thread safe, use alternate memory allocation mechanisms
+'     return (LPXLOPER12)&xMulti;
+' }
+Function fArray() As LongPtr
+    Dim xMulti As XL12Multi
+    Dim i&, rwCol&
+    
+    xMulti.xltype = xltypeMulti And xlbitDLLFree
+    xMulti.columns = 1
+    xMulti.rows = 8
+    rwCol = xMulti.columns * xMulti.rows
+    
+End Function
+
+Private Sub Test_SafeArrayDestroy()
+    Dim xStr As XL12Ptr = GetXL12StrPtr("testString")
+    Dim xFree As XLOPER12, lret As Long
+    Copy32 xFree, xStr
+    lret = SafeArrayDestroy(xFree.pVbDataSA)
+    xFree.pVbDataSA = 0
+End Sub
+Private Sub Test_xlAutoFree12()
+    Dim xMulti As XL12Multi = GetXL12Multi(1, 4, _
+                                1, True, "строка", 4.7)
+    Dim bAr() As Byte
+    GetMemPtr_ xMulti.xTmpBuf(2).bTmpBuf, bAr
+    ' Dim xAr() As XL12Ptr = GetAryMapXl12Ptr(xMulti)
+    
+    CType(Of xlAutoFree12_deleg)(AddressOf xlAutoFree12)(xMulti)
+    
+    ' AryUnMap VarPtr(xAr)
+    PutSA(bAr) = 0
+End Sub
+Private Sub TestGetAryMapXl12Ptr()
+    Dim xMulti As XL12Multi = GetXL12Multi(2, 2, 1, 2, 3, 4)
+    
+    Dim xAr() As XL12Num
+    GetAryMapXl12 xMulti, VarPtr(xAr), is2d:=True
+    
+    For rw As Long = 0 To UBound(xAr, 2)
+    For cl As Long = 0 To UBound(xAr)
+        Debug.Print xAr(cl, rw).num ; rw + 1 ; cl + 1
+    Next
+    Next
+    
+    AryUnMap VarPtr(xAr)
+End Sub
+
+Private Sub TestAnd()
+    Dim l&
+    l = xltypeStr
+    l = xltypeStr Or xlbitDLLFree
+    
+End Sub
+
+End Module
