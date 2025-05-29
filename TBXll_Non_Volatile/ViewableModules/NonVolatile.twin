@@ -1,0 +1,198 @@
+Module NonVolatile
+    ' Private Type Okt
+    '     llLo As LongLong
+    '     llHi As LongLong
+    ' End Type
+    '===========================-UDF Offset_nv-===========================
+    [DllExport] 'Non-volatile analogue of the Offset sheet function
+    Function Offset_nv(xRef As XLOPER12, xRowOff As XLOPER12, xColOff As XLOPER12, xHeight As XLOPER12, xWidth As XLOPER12) As LongPtr
+        Dim lret As Excel4ReturnCodes
+        Dim xRef2 As XLOPER12, xStr As XLOPER12, sAdr$
+        ' Dim xRes As XLOPER12
+        ' xFalse.xltype = xltypeBool
+        
+        
+        If pExcel12p(xlfOffset, xRef, 5, xRef, xRowOff, xColOff, xHeight, xWidth) = xlretSuccess Then
+            ' If xRef2.xltype And xltypeSRef Then
+                ' pExcel12p(xlfReftext, xStr, 2, xRef2, GetXL12BOOL(True))
+                ' sAdr = Replace$(XL12StrValue(xStr), "$", vbNullString)
+                ' pExcel12 xlFree, 1, VarPtr(xStr)
+                ' MsgBox sAdr
+            ' Else: MsgBox "xRef2.xltype " & xRef2.xltype
+            ' End If
+        End If
+        
+        Return VarPtr(xRef)
+    End Function
+    Private OfNV As BOOL
+    Private OfNVTasks As Collection, OfNVRefPool() As XLOPER12
+    Private OfNVLstInd As Long, OfNVMaxInd As Long
+    [DllExport] 'Non-volatile analogue of the Offset sheet function
+    Function Offset_nv2(xRef As XLOPER12, xRowOff As XLOPER12, xColOff As XLOPER12, xHeight As XLOPER12, xWidth As XLOPER12, xRef2 As XLOPER12) As LongPtr
+        pExcel12p(xlfVolatile, ByVal vbNullPtr, 1, xl12False) 'disable volatile https://github.com/slapedra/xlscala_old/blob/171857e789827af7be82273e7c34ac0486dccd28/xll/src/xlscala/functions/toolfunctions.cpp#L203
+        
+        If pExcel12p(xlfOffset, xRef, 5, xRef, xRowOff, xColOff, xHeight, xWidth) = xlretSuccess Then
+            If xRef2.xltype And xltypeSRef Then
+                If CompareXL12SRef(xRef, xRef2) Then
+                Else: GoTo makeTask
+                End If
+            ElseIf xRef2.xltype And xltypeRef Then
+                If CompareXL12SRef(ByVal xRef.val, ByVal xRef2.val) Then
+                Else: GoTo makeTask
+                End If
+            End If
+        End If
+        
+        GoTo endFn:
+    makeTask:
+        Const StpIncr As Long = 256
+        Dim xAddr As XLOPER12
+        If OfNV Then Else OfNV = apiTrue
+        If OfNVLstInd < OfNVMaxInd Then
+        Else
+            OfNVMaxInd += StpIncr
+            ReDim Preserve OfNVRefPool(OfNVMaxInd)
+        End If
+        pExcel12p(xlfCaller, OfNVRefPool(OfNVLstInd))
+        pExcel12p(xlfReftext, xAddr, 2, xRef2, xl12True)
+        OfNVTasks.Add OfNVLstInd, XL12StrValue(xAddr)
+        pExcel12(xlFree, 1, VarPtr(xAddr))
+    endFn:
+        Return VarPtr(xRef)
+    End Function
+    [DllExport]
+    Sub EventOnCalc()
+        If OfNV Then
+            Dim i&
+            
+        
+            OfNV = apiFasle
+        End If
+        
+    End Sub
+    Sub RegisterEvent_CalculationEnded()
+       Dim pxRes As XL12BOOL
+       pExcel12p(xlEventRegister, ByVal vbNullPtr, 2, _
+                       GetXL12StrPtr("EventOnCalc"), GetXL12Int(xleventCalculationEnded))
+    End Sub
+    Private Type Xl12SRefCmp
+        count As Long
+        llLo As LongLong
+        llHi As LongLong
+    End Type
+    Public Delegate Function tfCompare (x1 As Any, x2 As Any) As BOOL
+    Public CompareXL12SRef As tfCompare
+    Function CompareXl12SRef_(xRef1 As Xl12SRefCmp, xRef2 As Xl12SRefCmp) As BOOL
+        If xRef1.count = 1& AndAlso _
+            xRef1.count = 1& AndAlso _
+            xRef1.llLo = xRef2.llLo AndAlso _
+            xRef1.llHi = xRef2.llHi Then
+            Return apiTrue
+        End If
+    End Function
+    
+    Private Type CallMember
+        bgn As Long
+        End As Long
+        argIndexes() As Long
+    End Type
+    Private Type LevelData
+        bgn As Long
+        lastInd As Long
+        argIndexes() As Long
+    End Type
+    Private Sub testGParseFormula()
+        Dim sFrml$, Arr$(), cmAr() As CallMember
+        Dim lastSepPos&, i&
+    
+    '    sFrml = "ГИПЕРССЫЛКА(СЦЕПИТЬ(""#"";(АДРЕС(1+СТРОКА()+СЧЁТЕСЛИ(ДВССЫЛ(АДРЕС(СТРОКА()+1;СТОЛБЕЦ())):ДВССЫЛ(АДРЕС(СТРОКА2($1394:$1394);СТОЛБЕЦ()));СЦЕПИТЬ(ТЕКСТ1(ГОД($K24);""0000"");ТЕКСТ(МЕСЯЦ($K24);""00"");ТЕКСТ(ДЕНЬ($K24);""00"")));СТОЛБЕЦ()));"":"";(АДРЕС(1+СТРОКА()+СЧЁТЕСЛИ(ДВССЫЛ(АДРЕС(СТРОКА()+1;СТОЛБЕЦ())):ДВССЫЛ(АДРЕС(СТРОКА($1394:$1394);СТОЛБЕЦ()));СЦЕПИТЬ(ТЕКСТ(ГОД($K24);""0000"");ТЕКСТ(МЕСЯЦ($K24);""00"");ТЕКСТ(ДЕНЬ($K24);""00"")));2^14)));СЦЕПИТЬ(ТЕКСТ(ГОД($K24);""0000"");ТЕКСТ(МЕСЯЦ($K24);""00"");ТЕКСТ(ДЕНЬ($K24);""00"")))"
+        sFrml = "HYPERLINK(CONCATENATE(""#"",(ADDRESS(1+ROW()+COUNTIF(INDIRECT(ADDRESS(ROW()+1,COLUMN())):INDIRECT(ADDRESS(СТРОКА2($1394:$1394),COLUMN())),CONCATENATE(ТЕКСТ1(YEAR($K24),""0000""),TEXT(MONTH($K24),""00""),TEXT(DAY($K24),""00""))),COLUMN())),"":"",(ADDRESS(1+ROW()+COUNTIF(INDIRECT(ADDRESS(ROW()+1,COLUMN())):INDIRECT(ADDRESS(ROW($1394:$1394),COLUMN())),CONCATENATE(TEXT(YEAR($K24),""0000""),TEXT(MONTH($K24),""00""),TEXT(DAY($K24),""00""))),2^14))),CONCATENATE(TEXT(YEAR($K24),""0000""),TEXT(MONTH($K24),""00""),TEXT(DAY($K24),""00"")))"
+    
+        cmAr = ParseFormula(sFrml, "CONCATENATE")
+        Debug.Print
+        For i = 0 To UBound(cmAr)
+            lastSepPos = 0
+            With cmAr(i)
+              'Выводим строку функции целиком
+              Debug.Print Mid$(sFrml, .bgn, .End - .bgn + 2)
+              If GetSA(.argIndexes) Then
+                  lastSepPos = .argIndexes(UBound(.argIndexes))
+                  'выводим последний аргумент
+                  Debug.Print LTrim(Mid$(sFrml, lastSepPos + 1, .End - lastSepPos))
+              End If
+            End With
+        Next
+        
+    End Sub
+    Private Function ParseFormula(sFormula$, sFnName$) As CallMember()
+        Const StpIncr& = 100
+        Dim i&, n&, lvl&, ltmp&, lnFrml&, lnFnNm&, sTmp$, maxInd&
+        Dim iChars%(), lvData(StpIncr) As LevelData, cmArOut() As CallMember
+    
+        lnFrml = Len(sFormula)
+        lnFnNm = Len(sFnName)
+        ReDim iChars(1 To lnFrml)
+        CopyMemory iChars(1), ByVal StrPtr(sFormula), lnFrml * 2
+        maxInd = -1
+    
+        For i = 1 To lnFnNm
+            Select Case iChars(i)
+            Case 40: lvl = lvl + 1
+            Case 41: lvl = lvl - 1
+            End Select
+        Next
+        For i = i To lnFrml
+            Select Case iChars(i)
+            Case 40 ' "("
+                lvl = lvl + 1
+                ltmp = i - lnFnNm
+                sTmp = Mid$(sFormula, ltmp, lnFnNm)
+                If sTmp = sFnName Then lvData(lvl).bgn = ltmp
+            Case 44 ' "," (";" = 59)
+                With lvData(lvl)
+                  If .bgn Then
+                      ReDim Preserve .argIndexes(.lastInd)
+                      .argIndexes(.lastInd) = i
+                      .lastInd = .lastInd + 1
+                  End If
+                End With
+            Case 41 ' ")"
+                With lvData(lvl)
+                  If .bgn Then
+                      ltmp = .bgn
+                      If n > maxInd Then
+                          maxInd = maxInd + StpIncr
+                          ReDim Preserve cmArOut(maxInd)
+                      End If
+                      With cmArOut(n)
+                          .bgn = ltmp
+                          .End = i - 1
+    '                      .argIndexes = lvData(lvl).argIndexes
+                          vbaAryMove .argIndexes, lvData(lvl).argIndexes
+                      End With
+                      .bgn = 0
+                      .lastInd = 0
+                      n = n + 1
+                  End If
+                End With
+                lvl = lvl - 1
+            End Select
+        Next
+        ReDim Preserve cmArOut(n - 1)
+    
+        ParseFormula = cmArOut
+    End Function
+        
+    ' Private Sub TestVbaAryMove()
+    '     ' Dim lAr1&(), lAr2&()    
+    '     ' lAr1 = Array(1, 2, 3)
+    '     ' vbaAryMove lAr2, lAr1
+    '     Dim cmAr() As CallMember, lvAr() As LevelData
+    '     ReDim lvAr(2), cmAr(2)
+    '     lvAr(0).argIndexes = Array(1, 2, 3)
+    '     With cmAr(0)
+    '         vbaAryMove .argIndexes, lvAr(0).argIndexes
+    '     End With
+    ' End Sub
+
+End Module

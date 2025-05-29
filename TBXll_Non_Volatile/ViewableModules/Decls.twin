@@ -79,19 +79,17 @@ DeclareWide PtrSafe Sub PutMem2_ Lib "<hiddenmodule>" Alias "#9" (Dst As Any, By
 DeclareWide PtrSafe Sub PutMem4_ Lib "<hiddenmodule>" Alias "#10" (Dst As Any, ByVal value As Long)
 [PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
 DeclareWide PtrSafe Sub PutMemPtr_ Lib "<hiddenmodule>" Alias "#12" (Dst As Any, ByVal value As LongPtr)
-
 [PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
-DeclareWide PtrSafe Property Let PutByte Lib "<hiddenmodule>" Alias "#8" (Dst As LongPtr, ByVal value As Byte)
-
+DeclareWide PtrSafe Property Let PutByte Lib "<hiddenmodule>" Alias "#8" (Dst As LongPtr, ByVal bVal As Byte)
 [UseGetLastError(False), DLLStackCheck(False)]
 DeclareWide PtrSafe Property Let PutLng Lib "<hiddenmodule>" Alias "#10" (Dst As Any, ByVal lVal As Long)           'Alias PutMem4
+[UseGetLastError(False), DLLStackCheck(False), _
+    Description("Скопировать значение double (dbVal) в Dst")]
+DeclareWide PtrSafe Property Let PutDbl Lib "<hiddenmodule>" Alias "#11" (Dst As Any, ByVal dbVal As Double)
 [UseGetLastError(False), DLLStackCheck(False)]
 DeclareWide PtrSafe Property Let PutPtr Lib "<hiddenmodule>" Alias "#12" (Dst As Any, ByVal pVal As LongPtr)
 [UseGetLastError(False), DLLStackCheck(False)]
 DeclareWide PtrSafe Property Let PutSA Lib "<hiddenmodule>" Alias "#12" (Dst() As Any, ByVal pSA As LongPtr)
-[UseGetLastError(False), DLLStackCheck(False), _
-    Description("Скопировать значение double (dbVal) в Dst")]
-DeclareWide PtrSafe Property Let PutDbl Lib "<hiddenmodule>" Alias "#11" (Dst As Any, ByVal dbVal As Double)
 [PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
 DeclareWide PtrSafe Function GetLng Lib "<hiddenmodule>" Alias "#5" (Src As Any) As Long            'Alias GetMem4
 [PreserveSig(False), UseGetLastError(False), DLLStackCheck(False)]
@@ -104,7 +102,6 @@ DeclareWide PtrSafe Function GetSA Lib "<hiddenmodule>" Alias "#7" (Src() As Any
     Description("Creating a SafeArray Descriptor")]
 DeclareWide PtrSafe Function AllocSA Lib "oleaut32.dll" Alias "SafeArrayAllocDescriptor" ( _
             ByVal cDims As Long) As LongPtr
-
 [PreserveSig(True), UseGetLastError(False), DLLStackCheck(False)]
 Public DeclareWide PtrSafe Sub MovePtr Lib "<hiddenmodule>" Alias "#116" (dst As Any, src As Any)
 
@@ -172,7 +169,7 @@ DeclareWide PtrSafe Sub SafeArrayAllocDescriptorEx Lib "oleaut32.dll" ( _
 [UseGetLastError(False), DLLStackCheck(False)]
 DeclareWide PtrSafe Sub SafeArrayAllocDescriptor Lib "oleaut32.dll" ( _
             ByVal cDims As Long, _
-                  ppsaOut As LongPtr)
+                  psaOut As LongPtr)
 [UseGetLastError(False), DLLStackCheck(False)]
 DeclareWide PtrSafe Sub SafeArrayDestroyDescriptor Lib "oleaut32.dll" (ByVal pSA As LongPtr)
 [UseGetLastError(False), DLLStackCheck(False)]
@@ -201,19 +198,7 @@ Public Enum GMEM
     GMEM_DISCARDED = &H4000
     GMEM_LOCKCOUNT = &H00FF
 End Enum
+Public Const MAXLONGLONG As LongLong = 9223372036854775807^
+Public Const MAXLONG  = &H7fffffff  ' winnt
 
-Private Sub TEstArray()
-    Dim lAr&(), lAr2&(), pSA As LongPtr, lRes&
-    lAr = Array(2, 3)
-    lRes = SafeArrayDestroy(GetSA(lAr))
-    PutSA(lAr) = 0
-    pSA = AllocSA(1)
-    Debug.Print GetSA(lAr2)
-    PutSA(lAr2) = pSA ' GetSA(lAr)
-    Debug.Print GetSA(lAr2) ; pSA
-    ' PutSA(lAr) = 0
-    ' Debug.Print IsArrayInitialized(lAr)
-    ' ' SafeArrayDestroyDescriptor GetSA(lAr)
-    ' Debug.Print IsArrayInitialized(lAr)
-End Sub
 End Module

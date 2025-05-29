@@ -1,7 +1,7 @@
 Module ExcelSDK
 Public Enum BOOL
-    xlTrue
-    xlFasle
+    apiTrue
+    apiFasle
 End Enum
 Public Type POINT 'Not needed if WinDevLib present
     x As Long

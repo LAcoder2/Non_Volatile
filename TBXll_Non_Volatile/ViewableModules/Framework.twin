@@ -47,7 +47,7 @@ Module Framework
     ' EXCEL12PROC pexcel12;
     Private hmodule As LongPtr
     Public pExcel12 As EXCEL12PROC
-    
+    Public xl12False As XLOPER12, xl12True As XLOPER12
     ' __forceinline void FetchExcel12EntryPt(void)
     ' {
         ' if (pexcel12 == NULL)
@@ -66,6 +66,9 @@ Module Framework
                 pExcel12 = CType(Of EXCEL12PROC)(GetProcAddress(hmodule, EXCEL12ENTRYPT))
                 pExcel12p = AddressOf Excel12p
                 pExcel12v = CType(Of Excel12v_Deleg)(AddressOf Excel12v)
+                CompareXL12SRef = CType(Of tfCompare)(AddressOf CompareXl12SRef_)
+                xl12True.xltype = xltypeBool: xl12True.val = 1
+                xl12False.xltype = xltypeBool
             End If
         End If
     End Sub
@@ -323,7 +326,7 @@ Module Framework
         GetXL12Num.xltype = xltypeNum
     End Function
     Function GetXL12BOOL(ByVal b As Boolean) As XL12BOOL
-        GetXL12BOOL.blVal = b                         'CopyMemory ByVal VarPtr(GetXLBool12), b, 4
+        GetXL12BOOL.blVal = b And 1                'CopyMemory ByVal VarPtr(GetXLBool12), b, 4
         GetXL12BOOL.xltype = xltypeBool
     End Function
     
@@ -488,7 +491,7 @@ Module Framework
       Dim pxStr As LongPtr, strLen As Integer
       GetMemPtr_ xStr, pxStr
       GetMem2 pxStr, strLen
-      If strLen Then PutMemPtr XL12StrValue, SysAllocStringLen(pxStr + 2, strLen)
+      If strLen Then PutMemPtr_ XL12StrValue, SysAllocStringLen(pxStr + 2, strLen)
   End Function
   Function XL12StrToBstr(ByVal pxStr As LongPtr) As String
       Dim strLen As Integer
@@ -680,6 +683,46 @@ Module Framework
         FreeSA GetPtr(pAry)
         PutMemPtr pAry, 0
     End Sub
+    Function XLOPER12ToLongLong(XL12Inp As XLOPER12, llOut As LongLong) As XloperErrorCodes
+        Dim xInt As XL12Int, dNum As Double
+        Dim error As XloperErrorCodes
+                
+        Select Case XL12Inp.xltype
+        Case xltypeNum
+            dNum = GetDbl(XL12Inp)
+            If dNum <= MAXLONGLONG Then llOut = dNum
+        Case xltypeInt
+            llOut = GetLng(XL12Inp)
+        Case xltypeSRef
+            If pExcel12p(xlCoerce, xInt, 2, XL12Inp, GetXLInt12(xltypeInt)) = xlretSuccess Then
+                error = -1
+                llOut = xInt.lVal
+            ' Else: pExcel12p xlFree, , 1, xInt
+            End If
+        Case Else
+            error = xlerrValue
+        End Select
+        
+        Return error
+    End Function
+    Function XLOPER12ToDobule(XL12Inp As XLOPER12, dOut As Double) As XloperErrorCodes
+        Dim xNum As XL12Num
+        Dim error As XloperErrorCodes = -1
+                
+        Select Case XL12Inp.xltype
+        Case xltypeNum: dOut = GetDbl(XL12Inp)
+        Case xltypeInt: dOut = GetLng(XL12Inp)
+        Case xltypeSRef
+            If pExcel12p(xlCoerce, xNum, 2, XL12Inp, GetXLInt12(xltypeNum)) = xlretSuccess Then
+                error = -1
+                dOut = xNum.num
+            End If
+            ' pExcel12 xlFree, 1, VarPtr(xNum)
+        Case Else: error = xlerrValue
+        End Select
+        
+        Return error
+    End Function
 End Module
 
 [PredeclaredId]

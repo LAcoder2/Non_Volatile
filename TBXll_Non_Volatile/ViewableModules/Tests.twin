@@ -249,7 +249,38 @@ Private Sub TestAnd()
     Dim l&
     l = xltypeStr
     l = xltypeStr Or xlbitDLLFree
-    
+    l = InStr(1, "asfasdfa", "a")
 End Sub
+Private Sub TEstArray()
+    Dim lAr&(), lAr2&(), pSA As LongPtr, lRes&
+    lAr = Array(2, 3)
+    lRes = SafeArrayDestroy(GetSA(lAr))
+    PutSA(lAr) = 0
+    pSA = AllocSA(1)
+    Debug.Print GetSA(lAr2)
+    PutSA(lAr2) = pSA ' GetSA(lAr)
+    Debug.Print GetSA(lAr2) ; pSA
+    ' PutSA(lAr) = 0
+    ' Debug.Print IsArrayInitialized(lAr)
+    ' ' SafeArrayDestroyDescriptor GetSA(lAr)
+    ' Debug.Print IsArrayInitialized(lAr)
+End Sub
+' Private Type tCmp
+'     lLo As Long
+'     lHi As Long
+' End Type
+' Private Sub TestTypesComp()
+'     Dim q1 As tCmp, q2 As tCmp
+'     Dim blRes As Boolean
+'     blRes = (q1 = = q2)
+' End Sub
 
+' Private Sub TestXL12StrValue()
+'     Dim s1 As String = "asdfasfdasf"
+'     Dim s2 As String
+'     ' XL12StrValue
+'     PutMemPtr_ s2, SysAllocStringLen(StrPtr(s1), Len(s1))
+'     PutMemPtr_ s2, 0
+' End Sub
+    
 End Module
